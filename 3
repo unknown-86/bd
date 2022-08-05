@@ -1,0 +1,97 @@
+import java.io.IOException;
+import java.util.StringTokenizer;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.mapreduce.Mapper;
+import org.apache.hadoop.mapreduce.Reducer;
+import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+
+
+public void map(LongWritable key, Text value, 
+OutputCollector<Text, IntWritable> output, Reporter reporter) 
+throws IOException { 
+ 
+ //Convert the input line in Text type to a String
+ String line = value.toString();
+ //Use a tokenizer to split the line into words
+ StringTokenizer tokenizer = new StringTokenizer(line);
+//Iterate through each word and a form key value pairs
+while (tokenizer.hasMoreTokens()) {
+ //Assign each work from the tokenizer(of String type) 
+//to a Text ‘word’
+ word.set(tokenizer.nextToken());
+//Form key value pairs for each word as <word,one> and push 
+//it to the output collector
+ output.collect(word, one);
+ }
+ }
+ 
+ public static class Reduce extends MapReduceBase implements 
+Reducer<Text, IntWritable, Text, IntWritable> {
+//Reduce Header similar to the one in map with different 
+//key/value data type 
+//data from map will be <”word”,{1,1,..}> so we get it with an 
+//Iterator so we can go through the sets of values
+public void reduce(Text key, Iterator<IntWritable> values, 
+OutputCollector<Text, IntWritable> output, Reporter reporter) 
+throws IOException {
+ //Initaize a variable ‘sum’ as 0
+ int sum = 0;
+//Iterate through all the values with respect to a key and 
+//sum up all of them
+ while (values.hasNext()) {
+ sum += values.next().get();
+ }
+//Push to the output collector the Key and the obtained 
+sum as value
+ output.collect(key, new IntWritable(sum));
+ }
+ 
+ public static void main(String[] args) throws Exception {
+//creating a JobConf object and assigning a job name for identification 
+purposes
+ JobConf conf = new JobConf(WordCount.class);
+ conf.setJobName("wordcount");
+ //Setting configuration object with the Data Type of output Key and Value
+for //map and reduce if you have diffrent type of outputs there is other set
+method //for them
+ conf.setOutputKeyClass(Text.class);
+ conf.setOutputValueClass(IntWritable.class);
+ //Providing the mapper and reducer class names
+ conf.setMapperClass(Map.class);
+ conf.setCombinerClass(Reduce.class); //set theCombiner class
+ conf.setReducerClass(Reduce.class);
+// The default input format, "TextInputFormat," will load data in as //
+(LongWritable, Text) pairs. The long value is the byte offset of the line in 
+//the file. 
+ conf.setInputFormat(TextInputFormat.class);
+// The basic (default) instance is TextOutputFormat, which writes (key, value) 
+//pairs on individual lines of a text file.
+ conf.setOutputFormat(TextOutputFormat.class);
+//the hdfs input and output directory to be fetched from the command line
+ FileInputFormat.setInputPaths(conf, new Path(args[0]));
+ FileOutputFormat.setOutputPath(conf, new Path(args[1]));
+//submits the job to MapReduce. and returns only after the job has completed
+ JobClient.runJob(conf);
+ }
+
+
+public class WordCount {
+// Mapper code
+public static class Map extends MapReduceBase implements
+Mapper < LongWritable , Text , Text , IntWritable > {
+}
+// Reducer code
+public static class Reduce extends MapReduceBase implements
+Reducer < Text , IntWritable , Text , IntWritable > {
+}
+// Driver code
+public static void main ( String [] args ) throws Exception {
+}
+}
+
+
